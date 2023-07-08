@@ -145,7 +145,7 @@ search_blobs | grep -iE "vendor/etc/camera|vendor/etc/qvr/|vendor/camera3rd/|ven
 search_blobs | grep -iE "odm/etc/camera/|odm/etc/fad/|odm/etc/cooleffect/" | add_to_section Camera-configs
 search_blobs | grep -iE "vendor/etc/" | grep "ISO" | grep ".*\.ncf" | add_to_section Camera-configs
 search_blobs | grep -iE "vendor/firmware/cpp_firmware|vendor/firmware/CAMERA" | add_to_section Camera-firmware
-search_blobs | grep "vendor/" | grep -iE "libcam|libDepthBokeh|libSonyDual|libtriplecam|libremosaic|lib/camera/|lib64/camera/|mibokeh|lib_camera|libgcam|libdualcam|libmakeup|libtriplecam|SuperSensor|SonyIMX|libmialgo|libsnpe" | grep -v "vendor/lib/rfsa/adsp/" | add_to_section Camera
+search_blobs | grep "vendor/" | grep -iE "libcam|libmtkcam|libDepthBokeh|libSonyDual|libtriplecam|libremosaic|lib/camera/|lib/mtkcam/|lib64/camera/|lib64/mtkcam/|mibokeh|lib_camera|libgcam|libdualcam|libmakeup|libtriplecam|SuperSensor|SonyIMX|libmialgo|libsnpe" | grep -v "vendor/lib/rfsa/adsp/" | add_to_section Camera
 search_blobs | grep "odm/" | grep -iE "mipi_raw|mipi_mono|libal|libAl|libEIS|libanc|libai|lib2D|libap|libBokeh|libop|libimg|libocam|libst|libFace|libWater|libcam|libDepthBokeh|libSonyDual|libtriplecam|libremosaic|lib/camera/|lib64/camera/|mibokeh|lib_camera|libgcam|libdualcam|libmakeup|libtriplecam|SuperSensor|SonyIMX|libmialgo|libsnpe" | grep -v "odm/lib/rfsa/adsp/" | add_to_section Camera
 search_blobs | grep "vendor/" | grep -iE "libMegvii|libVD|libcapi|libextawb|libnti_" | grep -v "vendor/lib/rfsa/adsp/" | add_to_section Camera
 search_blobs | grep "odm/" | grep -iE "libml_util|liblvimfs|libmpbase|libnp|lib_rectify|libui|libSuperText|libhci_face|libFilter|libOGL|libyuv2|libXDoc|libhyper|libCOp|libcolor|libcoolex|libc++|libPerfect|libRbs|libDeVIS|libPolar|libtf|libmegface|libMegvii|libFDClite|libcore|libVD|libcapi|libextawb|libnti_" | grep -v "odm/lib/rfsa/adsp/" | add_to_section Camera
@@ -212,6 +212,7 @@ display_targets=(
 )
 search_blobs | get_hardware_module "${display_targets[@]}" | add_to_section Display-Hardware
 search_blobs | grep -iE "lib/|lib64/" | grep -iE "libsdm-disp-apis.so" | add_to_section Display-Hardware
+search_blobs | grep "vendor/" | grep -iE "android.hardware.gpu" | add_to_section Power-Hardware
 
 # Dolby
 search_blobs | grep "vendor/" | grep -iE "dolby" | add_to_section Dolby
@@ -438,6 +439,7 @@ power_targets=(
     "hw/power"
 )
 search_blobs | get_hardware_module "${power_targets[@]}" | add_to_section Power-Hardware
+search_blobs | grep "vendor/" | grep -iE "power-default" | add_to_section Power-Hardware
 
 # Qdutils_disp
 qdutils_targets=(
