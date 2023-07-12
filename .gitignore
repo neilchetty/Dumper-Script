@@ -2,7 +2,6 @@
 .github_orgname
 .tg_token
 .tg_chat
-.venv/
 input/
 tmp/
 out/
@@ -10,3 +9,14 @@ out/
 __pycache__
 utils/oppo_*
 utils/vmlinux*
+utils/ota_payload_extractor/update_metadata_pb2.py
+dumps/
+dummy_dt/
+input/
+kernels/
+working/
+vendor/
+tools/android_boot_image_editor/
+tools/extract-dtb/
+tools/Firmware_extractor/
+.fuse_*
