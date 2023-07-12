@@ -1,0 +1,12 @@
+.github_token
+.github_orgname
+.tg_token
+.tg_chat
+.venv/
+input/
+tmp/
+out/
+*.pyc
+__pycache__
+utils/oppo_*
+utils/vmlinux*
