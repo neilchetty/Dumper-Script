@@ -73,6 +73,7 @@ INPUTDIR="${PROJECT_DIR}"/input		# Firmware Download/Preload Directory
 UTILSDIR="${PROJECT_DIR}"/utils		# Contains Supportive Programs
 OUTDIR="${PROJECT_DIR}"/out			# Contains Final Extracted Files
 TMPDIR="${OUTDIR}"/tmp				# Temporary Working Directory
+SCRIPTDIR="${PROJECT_DIR}"/tools
 
 rm -rf "${TMPDIR}" 2>/dev/null
 mkdir -p "${OUTDIR}" "${TMPDIR}" 2>/dev/null
@@ -128,6 +129,7 @@ TRANSFER="${UTILSDIR}"/bin/transfer
 # Set Names of Downloader Utility Programs
 MEGAMEDIADRIVE_DL="${UTILSDIR}"/downloaders/mega-media-drive_dl.sh
 AFHDL="${UTILSDIR}"/downloaders/afh_dl.py
+RANDOM=$(date +%s)
 
 # EROFS
 FSCK_EROFS=${UTILSDIR}/bin/fsck.erofs
@@ -883,7 +885,7 @@ flavor=$(grep -m1 -oP "(?<=^ro.build.flavor=).*" -hs {system,system/system,vendo
 [[ -z "${flavor}" ]] && flavor=$(grep -m1 -oP "(?<=^ro.vendor.build.flavor=).*" -hs vendor/build*.prop)
 [[ -z "${flavor}" ]] && flavor=$(grep -m1 -oP "(?<=^ro.system.build.flavor=).*" -hs {system,system/system}/build*.prop)
 [[ -z "${flavor}" ]] && flavor=$(grep -m1 -oP "(?<=^ro.build.type=).*" -hs {system,system/system}/build*.prop)
-release=$(grep -m1 -oP "(?<=^ro.build.version.release=).*" -hs {system,system/system,vendor}/build*.prop)
+release=$(grep -m1 -oP "(?<=^ro.build.version.release=).*" -hs {my_manifest,system,system/system,vendor}/build*.prop | head -1)
 [[ -z "${release}" ]] && release=$(grep -m1 -oP "(?<=^ro.vendor.build.version.release=).*" -hs vendor/build*.prop)
 [[ -z "${release}" ]] && release=$(grep -m1 -oP "(?<=^ro.system.build.version.release=).*" -hs {system,system/system}/build*.prop)
 id=$(grep -m1 -oP "(?<=^ro.build.id=).*" -hs {system,system/system,vendor}/build*.prop)
@@ -892,10 +894,11 @@ id=$(grep -m1 -oP "(?<=^ro.build.id=).*" -hs {system,system/system,vendor}/build
 tags=$(grep -m1 -oP "(?<=^ro.build.tags=).*" -hs {system,system/system,vendor}/build*.prop)
 [[ -z "${tags}" ]] && tags=$(grep -m1 -oP "(?<=^ro.vendor.build.tags=).*" -hs vendor/build*.prop)
 [[ -z "${tags}" ]] && tags=$(grep -m1 -oP "(?<=^ro.system.build.tags=).*" -hs {system,system/system}/build*.prop)
-platform=$(grep -m1 -oP "(?<=^ro.board.platform=).*" -hs {system,system/system,vendor}/build*.prop | head -1)
+platform=$(grep -m1 -oP "(?<=^ro.vendor.mediatek.platform=).*" -hs vendor/build*.prop | head -1)
+[[ -z "${platform}" ]] && platform=$(grep -m1 -oP "(?<=^ro.board.platform=).*" -hs {system,system/system,vendor}/build*.prop | head -1)
 [[ -z "${platform}" ]] && platform=$(grep -m1 -oP "(?<=^ro.vendor.board.platform=).*" -hs vendor/build*.prop)
 [[ -z "${platform}" ]] && platform=$(grep -m1 -oP "(?<=^ro.system.board.platform=).*" -hs {system,system/system}/build*.prop)
-manufacturer=$(grep -m1 -oP "(?<=^ro.product.manufacturer=).*" -hs {system,system/system,vendor}/build*.prop | head -1)
+manufacturer=$(grep -m1 -oP "(?<=^ro.product.manufacturer=).*" -hs {my_manifest,system,system/system,vendor}/build*.prop | head -1)
 [[ -z "${manufacturer}" ]] && manufacturer=$(grep -m1 -oP "(?<=^ro.product.brand.sub=).*" -hs system/system/euclid/my_product/build*.prop)
 [[ -z "${manufacturer}" ]] && manufacturer=$(grep -m1 -oP "(?<=^ro.vendor.product.manufacturer=).*" -hs vendor/build*.prop | head -1)
 [[ -z "${manufacturer}" ]] && manufacturer=$(grep -m1 -oP "(?<=^ro.product.vendor.manufacturer=).*" -hs vendor/build*.prop | head -1)
@@ -908,7 +911,7 @@ manufacturer=$(grep -m1 -oP "(?<=^ro.product.manufacturer=).*" -hs {system,syste
 [[ -z "${manufacturer}" ]] && manufacturer=$(grep -m1 -oP "(?<=^ro.product.product.manufacturer=).*" -hs vendor/euclid/product/build*.prop)
 [[ -z "${manufacturer}" ]] && manufacturer=$(grep -m1 -oP "(?<=^ro.product.vendor.manufacturer=).*" -hs vendor/build*.prop)
 [[ -z "${manufacturer}" ]] && manufacturer=$(grep -m1 -oP "(?<=^ro.product.system.manufacturer=).*" -hs {system,system/system}/build*.prop)
-fingerprint=$(grep -m1 -oP "(?<=^ro.build.fingerprint=).*" -hs {system,system/system}/build*.prop)
+fingerprint=$(grep -m1 -oP "(?<=^ro.build.fingerprint=).*" -hs {my_manifest,system,system/system}/build*.prop | head -1)
 [[ -z "${fingerprint}" ]] && fingerprint=$(grep -m1 -oP "(?<=^ro.vendor.build.fingerprint=).*" -hs vendor/build*.prop | head -1)
 [[ -z "${fingerprint}" ]] && fingerprint=$(grep -m1 -oP "(?<=^ro.system.build.fingerprint=).*" -hs {system,system/system}/build*.prop)
 [[ -z "${fingerprint}" ]] && fingerprint=$(grep -m1 -oP "(?<=^ro.product.build.fingerprint=).*" -hs product/build*.prop)
@@ -918,6 +921,7 @@ fingerprint=$(grep -m1 -oP "(?<=^ro.build.fingerprint=).*" -hs {system,system/sy
 [[ -z "${fingerprint}" ]] && fingerprint=$(grep -m1 -oP "(?<=^ro.bootimage.build.fingerprint=).*" -hs vendor/build.prop)
 brand=$(grep -m1 -oP "(?<=^ro.product.brand=).*" -hs {system,system/system,vendor}/build*.prop | head -1)
 [[ -z "${brand}" ]] && brand=$(grep -m1 -oP "(?<=^ro.product.brand.sub=).*" -hs system/system/euclid/my_product/build*.prop)
+[[ -z "${brand}" ]] && brand=$(grep -m1 -oP "(?<=^ro.product.vendor.brand=).*" -hs my_manifest/build*.prop | head -1)
 [[ -z "${brand}" ]] && brand=$(grep -m1 -oP "(?<=^ro.product.vendor.brand=).*" -hs vendor/build*.prop | head -1)
 [[ -z "${brand}" ]] && brand=$(grep -m1 -oP "(?<=^ro.vendor.product.brand=).*" -hs vendor/build*.prop | head -1)
 [[ -z "${brand}" ]] && brand=$(grep -m1 -oP "(?<=^ro.product.system.brand=).*" -hs {system,system/system}/build*.prop | head -1)
@@ -929,6 +933,8 @@ brand=$(grep -m1 -oP "(?<=^ro.product.brand=).*" -hs {system,system/system,vendo
 [[ -z "${brand}" ]] && brand=$(echo "$fingerprint" | cut -d'/' -f1)
 codename=$(grep -m1 -oP "(?<=^ro.product.device=).*" -hs {vendor,system,system/system}/build*.prop | head -1)
 [[ -z "${codename}" ]] && codename=$(grep -m1 -oP "(?<=^ro.vendor.product.device.oem=).*" -hs vendor/euclid/odm/build.prop | head -1)
+[[ -z "${codename}" ]] && codename=$(grep -m1 -oP "(?<=^ro.product.model=).*" -hs my_manifest/build*.prop | head -1)
+[[ -z "${codename}" ]] && codename=$(grep -m1 -oP "(?<=^ro.product.device=).*" -hs my_manifest/build*.prop | head -1)
 [[ -z "${codename}" ]] && codename=$(grep -m1 -oP "(?<=^ro.product.vendor.device=).*" -hs vendor/build*.prop | head -1)
 [[ -z "${codename}" ]] && codename=$(grep -m1 -oP "(?<=^ro.vendor.product.device=).*" -hs vendor/build*.prop | head -1)
 [[ -z "${codename}" ]] && codename=$(grep -m1 -oP "(?<=^ro.product.system.device=).*" -hs {system,system/system}/build*.prop | head -1)
@@ -946,7 +952,7 @@ description=$(grep -m1 -oP "(?<=^ro.build.description=).*" -hs {system,system/sy
 [[ -z "${description}" ]] && description=$(grep -m1 -oP "(?<=^ro.system.build.description=).*" -hs {system,system/system}/build*.prop)
 [[ -z "${description}" ]] && description=$(grep -m1 -oP "(?<=^ro.product.build.description=).*" -hs product/build.prop)
 [[ -z "${description}" ]] && description=$(grep -m1 -oP "(?<=^ro.product.build.description=).*" -hs product/build*.prop)
-incremental=$(grep -m1 -oP "(?<=^ro.build.version.incremental=).*" -hs {system,system/system,vendor}/build*.prop | head -1)
+incremental=$(grep -m1 -oP "(?<=^ro.build.version.incremental=).*" -hs {my_manifest,system,system/system,vendor}/build*.prop | head -1)
 [[ -z "${incremental}" ]] && incremental=$(grep -m1 -oP "(?<=^ro.vendor.build.version.incremental=).*" -hs vendor/build*.prop)
 [[ -z "${incremental}" ]] && incremental=$(grep -m1 -oP "(?<=^ro.system.build.version.incremental=).*" -hs {system,system/system}/build*.prop | head -1)
 [[ -z "${incremental}" ]] && incremental=$(grep -m1 -oP "(?<=^ro.build.version.incremental=).*" -hs my_product/build*.prop)
@@ -961,16 +967,17 @@ abilist=$(grep -m1 -oP "(?<=^ro.product.cpu.abilist=).*" -hs {system,system/syst
 [[ -z "${abilist}" ]] && abilist=$(grep -m1 -oP "(?<=^ro.vendor.product.cpu.abilist=).*" -hs vendor/build*.prop)
 locale=$(grep -m1 -oP "(?<=^ro.product.locale=).*" -hs {system,system/system}/build*.prop | head -1)
 [[ -z "${locale}" ]] && locale=undefined
-density=$(grep -m1 -oP "(?<=^ro.sf.lcd_density=).*" -hs {system,system/system}/build*.prop | head -1)
+density=$(grep -m1 -oP "(?<=^ro.sf.lcd_density=).*" -hs {system,system/system,vendor}/build*.prop | head -1)
 [[ -z "${density}" ]] && density=undefined
 is_ab=$(grep -m1 -oP "(?<=^ro.build.ab_update=).*" -hs {system,system/system,vendor}/build*.prop)
 [[ -z "${is_ab}" ]] && is_ab="false"
 treble_support=$(grep -m1 -oP "(?<=^ro.treble.enabled=).*" -hs {system,system/system}/build*.prop)
 [[ -z "${treble_support}" ]] && treble_support="false"
-otaver=$(grep -m1 -oP "(?<=^ro.build.version.ota=).*" -hs {vendor/euclid/product,oppo_product,system,system/system}/build*.prop | head -1)
-[[ ! -z "${otaver}" && -z "${fingerprint}" ]] && branch=$(echo "${otaver}" | tr ' ' '-')
+otaver=$(grep -m1 -oP "(?<=^ro.build.display.ota=).*" -hs my_manifest/build*.prop | head -1)
+[[ -z "${otaver}" ]] && otaver=$(grep -m1 -oP "(?<=^ro.build.version.ota=).*" -hs {my_manifest,vendor/euclid/product,oppo_product,system,system/system}/build*.prop | head -1)
+[[ ! -z "${otaver}" && -z "${fingerprint}" ]] && branch=$(echo "${otaver}-$RANDOM" | tr ' ' '-')
 [[ -z "${otaver}" ]] && otaver=$(grep -m1 -oP "(?<=^ro.build.fota.version=).*" -hs {system,system/system}/build*.prop | head -1)
-[[ -z "${branch}" ]] && branch=$(echo "${description}" | tr ' ' '-')
+[[ -z "${branch}" ]] && branch=$(echo "${description}-$RANDOM" | tr ' ' '-')
 
 if [[ "$PUSH_TO_GITLAB" = true ]]; then
 	rm -rf .github_token
@@ -1016,6 +1023,17 @@ chown "$(whoami)" ./* -R
 chmod -R u+rwX ./*		#ensure final permissions
 find "$OUTDIR" -type f -printf '%P\n' | sort | grep -v ".git/" > "$OUTDIR"/all_files.txt
 
+# Generate Dummy DT
+dummydtout="dummy-device-tree"
+mkdir -p $dummydtout
+chmod a+x $SCRIPTDIR/dummy_dt.sh
+bash $SCRIPTDIR/dummy_dt.sh $OUTDIR
+rm -rf $PROJECT_DIR/dummy_dt/working
+cp -r $PROJECT_DIR/dummy_dt/* $OUTDIR/$dummydtout
+
+# Regenerate all_files.txt
+find "$OUTDIR" -type f -printf '%P\n' | sort | grep -v ".git/" > "$OUTDIR"/all_files.txt
+
 # Generate LineageOS Trees
 if [[ "$treble_support" = true ]]; then
         aospdtout="lineage-device-tree"
@@ -1038,7 +1056,7 @@ function write_sha1sum(){
 
 	# Temporary file
 	local TMP_FILE=${SRC_FILE}.sha1sum.tmp
-	
+
 	# Get rid of all the Blank lines and Comments
 	( cat ${SRC_FILE} | grep -v '^[[:space:]]*$' | grep -v "# " ) > ${TMP_FILE}
 
@@ -1105,8 +1123,8 @@ rm -rf "${TMPDIR}" 2>/dev/null
 
 if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 	GITHUB_TOKEN=$(< "${PROJECT_DIR}"/.github_token)	# Write Your Github Token In a Text File
-	[[ -z "$(git config --get user.email)" ]] && git config user.email "guptasushrut@gmail.com"
-	[[ -z "$(git config --get user.name)" ]] && git config user.name "Sushrut1101"
+	[[ -z "$(git config --get user.email)" ]] && git config user.email "neilchetty4559@gmail.com"
+	[[ -z "$(git config --get user.name)" ]] && git config user.name "neilchetty"
 	if [[ -s "${PROJECT_DIR}"/.github_orgname ]]; then
 		GIT_ORG=$(< "${PROJECT_DIR}"/.github_orgname)	# Set Your Github Organization Name
 	else
@@ -1135,7 +1153,7 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 	printf "\n\nStarting Git Init...\n"
 	git init		# Insure Your Github Authorization Before Running This Script
 	git config --global http.postBuffer 524288000		# A Simple Tuning to Get Rid of curl (18) error while `git push`
-	git checkout -b "${branch}" || { git checkout -b "${incremental}" && export branch="${incremental}"; }
+	git checkout -b "${branch}" || { git checkout -b "${incremental}" && export branch="${incremental}-$RANDOM"; }
 	find . \( -name "*sensetime*" -o -name "*.lic" \) | cut -d'/' -f'2-' >| .gitignore
 	[[ ! -s .gitignore ]] && rm .gitignore
 	git add --all
@@ -1150,7 +1168,7 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 	{ [[ $(du -bs .) -lt 1288490188 ]] && git push https://${GITHUB_TOKEN}@github.com/${GIT_ORG}/${repo}.git "${branch}"; } || (
 		git update-ref -d HEAD
 		git reset system/ vendor/
-		git checkout -b "${branch}" || { git checkout -b "${incremental}" && export branch="${incremental}"; }
+		git checkout -b "${branch}" || { git checkout -b "${incremental}" && export branch="${incremental}-$RANDOM"; }
 		git commit -asm "Add extras for ${description}"
 		git push https://${GITHUB_TOKEN}@github.com/${GIT_ORG}/${repo}.git "${branch}"
 		git add vendor/
@@ -1169,7 +1187,7 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 		if [[ -s "${PROJECT_DIR}"/.tg_chat ]]; then		# TG Channel ID
 			CHAT_ID=$(< "${PROJECT_DIR}"/.tg_chat)
 		else
-			CHAT_ID="@DumprXDumps"
+			CHAT_ID="@neil_dumps"
 		fi
 		printf "Sending telegram notification...\n"
 		printf "<b>Brand: %s</b>" "${brand}" >| "${OUTDIR}"/tg.html
@@ -1177,6 +1195,7 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 			printf "\n<b>Device: %s</b>" "${codename}"
 			printf "\n<b>Platform: %s</b>" "${platform}"
 			printf "\n<b>Android Version:</b> %s" "${release}"
+			[ ! -z "${otaver}" ] && printf "\n<b>OTA Version:</b> %s" "${otaver}"
 			[ ! -z "${kernel_version}" ] && printf "\n<b>Kernel Version:</b> %s" "${kernel_version}"
 			printf "\n<b>Fingerprint:</b> %s" "${fingerprint}"
 			printf "\n<a href=\"https://github.com/%s/%s/tree/%s/\">Github Tree</a>" "${GIT_ORG}" "${repo}" "${branch}"
@@ -1213,11 +1232,10 @@ elif [[ -s "${PROJECT_DIR}"/.gitlab_token ]]; then
 
 	git init		# Insure Your GitLab Authorization Before Running This Script
 	git config --global http.postBuffer 524288000		# A Simple Tuning to Get Rid of curl (18) error while `git push`
-	git checkout -b "${branch}" || { git checkout -b "${incremental}" && export branch="${incremental}"; }
-	find . \( -name "*sensetime*" -o -name "*.lic" \) | cut -d'/' -f'2-' >| .gitignore
+	git checkout -b "${branch}" || { git checkout -b "${incremental}" && export branch="${incremental}-$RANDOM"; }
 	[[ ! -s .gitignore ]] && rm .gitignore
-	[[ -z "$(git config --get user.email)" ]] && git config user.email "guptasushrut@gmail.com"
-	[[ -z "$(git config --get user.name)" ]] && git config user.name "Sushrut1101"
+	[[ -z "$(git config --get user.email)" ]] && git config user.email "neilchetty4559@gmail.com"
+	[[ -z "$(git config --get user.name)" ]] && git config user.name "neilchetty"
 	git add --all
 
 	# Create Subgroup
@@ -1299,7 +1317,7 @@ elif [[ -s "${PROJECT_DIR}"/.gitlab_token ]]; then
 		if [[ -s "${PROJECT_DIR}"/.tg_chat ]]; then		# TG Channel ID
 			CHAT_ID=$(< "${PROJECT_DIR}"/.tg_chat)
 		else
-			CHAT_ID="@DumprXDumps"
+			CHAT_ID="@neil_dumps"
 		fi
 		printf "Sending telegram notification...\n"
 		printf "<b>Brand: %s</b>" "${brand}" >| "${OUTDIR}"/tg.html
@@ -1307,6 +1325,7 @@ elif [[ -s "${PROJECT_DIR}"/.gitlab_token ]]; then
 			printf "\n<b>Device: %s</b>" "${codename}"
 			printf "\n<b>Platform: %s</b>" "${platform}"
 			printf "\n<b>Android Version:</b> %s" "${release}"
+			[ ! -z "${otaver}" ] && printf "\n<b>OTA Version:</b> %s" "${otaver}"
 			[ ! -z "${kernel_version}" ] && printf "\n<b>Kernel Version:</b> %s" "${kernel_version}"
 			printf "\n<b>Fingerprint:</b> %s" "${fingerprint}"
 			printf "\n<a href=\"${GITLAB_HOST}/%s/%s/-/tree/%s/\">Gitlab Tree</a>" "${GIT_ORG}" "${repo}" "${branch}"
