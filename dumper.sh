@@ -95,7 +95,9 @@ for tool_slug in "${EXTERNAL_TOOLS[@]}"; do
 done
 
 # Activate virtual environment
-[ -e ".venv" ] && source .venv/bin/activate
+[[ "${USE_VENV}" == "false" || "${USE_VENV}" == "0" ]] || {
+	[ -e ".venv" ] && source .venv/bin/activate
+}
 
 ## See README.md File For Program Credits
 # Set Utility Program Alias
@@ -135,8 +137,8 @@ RANDOM=$(date +%s)
 FSCK_EROFS=${UTILSDIR}/bin/fsck.erofs
 
 # Partition List That Are Currently Supported
-PARTITIONS="system system_ext system_other systemex vendor cust odm oem factory product xrom modem dtbo dtb boot vendor_boot recovery tz oppo_product preload_common opproduct reserve india my_preload my_odm my_stock my_operator my_country my_product my_company my_engineering my_heytap my_custom my_manifest my_carrier my_region my_bigball my_version special_preload system_dlkm vendor_dlkm odm_dlkm init_boot vendor_kernel_boot odmko socko nt_log mi_ext"
-EXT4PARTITIONS="system vendor cust odm oem factory product xrom systemex oppo_product preload_common"
+PARTITIONS="system system_ext system_other systemex vendor cust odm oem factory product xrom modem dtbo dtb boot vendor_boot recovery tz oppo_product preload_common opproduct reserve india my_preload my_odm my_stock my_operator my_country my_product my_company my_engineering my_heytap my_custom my_manifest my_carrier my_region my_bigball my_version special_preload system_dlkm vendor_dlkm odm_dlkm init_boot vendor_kernel_boot odmko socko nt_log mi_ext hw_product product_h preas preavs"
+EXT4PARTITIONS="system vendor cust odm oem factory product xrom systemex oppo_product preload_common hw_product product_h preas preavs"
 OTHERPARTITIONS="tz.mbn:tz tz.img:tz modem.img:modem NON-HLOS:modem boot-verified.img:boot recovery-verified.img:recovery dtbo-verified.img:dtbo"
 
 # NOTE: $(pwd) is ${PROJECT_DIR}
@@ -632,11 +634,11 @@ elif 7z l -ba "${FILEPATH}" | grep tar.md5 | gawk '{print $NF}' | grep -q AP_ 2>
 			printf "Extracted %s\n" "${f}"
 		done
 	}
+	for samsung_ext4_img_files in $(find -maxdepth 1 -type f -name \*.ext4 -printf '%P\n'); do
+		mv -v $samsung_ext4_img_files "${samsung_ext4_img_files%%.ext4}"
+	done
 	if [[ -f super.img ]]; then
 		superimage_extract || exit 1	
-	fi
-	if [[ -f system.img.ext4 ]]; then
-		find "${TMPDIR}" -maxdepth 1 -type f -name "*.img.ext4" | rename 's/.img.ext4/.img/g' > /dev/null 2>&1
 	fi
 	if [[ ! -f system.img ]]; then
 		printf "Extract failed\n"
@@ -644,7 +646,7 @@ elif 7z l -ba "${FILEPATH}" | grep tar.md5 | gawk '{print $NF}' | grep -q AP_ 2>
 	fi
 elif 7z l -ba "${FILEPATH}" | grep -q payload.bin 2>/dev/null || [[ $(find "${TMPDIR}" -type f -name "payload.bin" | wc -l) -ge 1 ]]; then
 	printf "AB OTA Payload Detected\n"
-	${PAYLOAD_EXTRACTOR} -o "${TMPDIR}" "${FILEPATH}" >/dev/null
+	${PAYLOAD_EXTRACTOR} -c "$(nproc --all)" -o "${TMPDIR}" "${FILEPATH}" >/dev/null
 elif 7z l -ba "${FILEPATH}" | grep ".*.rar\|.*.zip\|.*.7z\|.*.tar$" 2>/dev/null || [[ $(find "${TMPDIR}" -type f \( -name "*.rar" -o -name "*.zip" -o -name "*.7z" -o -name "*.tar" \) | wc -l) -ge 1 ]]; then
 	printf "Rar/Zip/7Zip/Tar Archived Firmware Detected\n"
 	if [[ -f "${FILEPATH}" ]]; then
@@ -667,14 +669,14 @@ elif 7z l -ba "${FILEPATH}" | grep -q "UPDATE.APP" 2>/dev/null || [[ $(find "${T
 	printf "Huawei UPDATE.APP Detected\n"
 	[[ -f "${FILEPATH}" ]] && 7z x "${FILEPATH}" UPDATE.APP 2>/dev/null >> "${TMPDIR}"/zip.log
 	find "${TMPDIR}" -type f -name "UPDATE.APP" -exec mv {} . \;
-	python3 "${SPLITUAPP}" -f "UPDATE.APP" -l super || (
+	python3 "${SPLITUAPP}" -f "UPDATE.APP" -l super preas preavs || (
 	for partition in ${PARTITIONS}; do
 		python3 "${SPLITUAPP}" -f "UPDATE.APP" -l "${partition/.img/}" || printf "%s not found in UPDATE.APP\n" "${partition}"
 	done )
 	find output/ -type f -name "*.img" -exec mv {} . \;	# Partitions Are Extracted In "output" Folder
 	if [[ -f super.img ]]; then
 		printf "Creating super.img.raw ...\n"
-		"${SIMG2IMG}" super.img super.img.raw 2>/dev/null
+		"${SIMG2IMG}" super.img super_* super.img.raw 2>/dev/null
 		[[ ! -s super.img.raw && -f super.img ]] && mv super.img super.img.raw
 	fi
 	superimage_extract || exit 1
@@ -836,6 +838,8 @@ for p in $PARTITIONS; do
 						sudo umount "${p}"
 						sudo cp -rf "${p}_/"* "${p}"
 						sudo rm -rf "${p}_"
+						sudo chown -R "$(whoami)" "${p}"/*
+						chmod -R u+rwX "${p}"/*
 						if [ $? -eq 0 ]; then
 							rm -fv "$p".img > /dev/null 2>&1
 						else
@@ -947,6 +951,7 @@ codename=$(grep -m1 -oP "(?<=^ro.product.device=).*" -hs {vendor,system,system/s
 [[ -z "${codename}" ]] && codename=$(grep -m1 -oP "(?<=^ro.product.vendor.device=).*" -hs my_product/build*.prop)
 [[ -z "${codename}" ]] && codename=$(echo "$fingerprint" | cut -d'/' -f3 | cut -d':' -f1)
 [[ -z "${codename}" ]] && codename=$(grep -m1 -oP "(?<=^ro.build.fota.version=).*" -hs {system,system/system}/build*.prop | cut -d'-' -f1 | head -1)
+[[ -z "${codename}" ]] && codename=$(grep -oP "(?<=^ro.build.product=).*" -hs {vendor,system,system/system}/build*.prop | head -1)
 description=$(grep -m1 -oP "(?<=^ro.build.description=).*" -hs {system,system/system,vendor}/build*.prop | head -1)
 [[ -z "${description}" ]] && description=$(grep -m1 -oP "(?<=^ro.vendor.build.description=).*" -hs vendor/build*.prop)
 [[ -z "${description}" ]] && description=$(grep -m1 -oP "(?<=^ro.system.build.description=).*" -hs {system,system/system}/build*.prop)
@@ -1060,7 +1065,7 @@ function write_sha1sum(){
 	# Get rid of all the Blank lines and Comments
 	( cat ${SRC_FILE} | grep -v '^[[:space:]]*$' | grep -v "# " ) > ${TMP_FILE}
 
-	# Amend the sha1sum of blobs in the Destination File
+	# Append the sha1sum of blobs in the Destination File
 	cp ${SRC_FILE} ${DST_FILE}
 	cat ${TMP_FILE} | while read -r i; do {
 		local BLOB=${i}
@@ -1085,8 +1090,8 @@ function write_sha1sum(){
 		local ORG_EXP="${BLOB}"
 		local FINAL_EXP="${BLOB}|${SHA1}"
 
-		# Amend the |sha1sum
-		sed -i "s:${ORG_EXP}:${FINAL_EXP}:g" "${DST_FILE}"
+		# Append the |sha1sum
+		sed -i "s:${ORG_EXP}$:${FINAL_EXP}:g" "${DST_FILE}"
 	}; done
 
 	# Delete the Temporary file
@@ -1167,6 +1172,13 @@ if [[ -s "${PROJECT_DIR}"/.github_token ]]; then
 	printf "\nPushing to %s via HTTPS...\nBranch:%s\n" "https://github.com/${GIT_ORG}/${repo}.git" "${branch}"
 	sleep 1
 	git remote add origin https://${GITHUB_TOKEN}@github.com/${GIT_ORG}/${repo}.git "${branch}"
+	git lfs install
+	[ -e ".gitattributes" ] || find . -type f -not -path ".git/*" -size +100M -exec git lfs track {} \;
+	[ -e ".gitattributes" ] && {
+		git add ".gitattributes"
+		git commit -sm "Setup Git LFS"
+		git push -u origin "${branch}"
+	}
 	git add -- . ':!system/' ':!vendor/'
 	git commit -sm "Add extras for ${description}"
 	git push -u origin "${branch}"
@@ -1223,7 +1235,7 @@ elif [[ -s "${PROJECT_DIR}"/.gitlab_token ]]; then
 	GITLAB_HOST="https://${GITLAB_INSTANCE}"
 
 	# Check if already dumped or not
-	[[ $(curl -sL "${GITLAB_HOST}/${GIT_ORG}/${repo}/-/raw/${branch}/all_files.txt" | grep "all_files.txt") ]] && { printf "Firmware already dumped!\nGo to https://"$GITLAB_INSTANCE"/${GIT_ORG}/${repo}/-/tree/${branch}\n" && exit 1; }
+	[[ $(curl -sL "${GITLAB_HOST}/${GIT_ORG}/${repo}/-/raw/${branch}/all_files.txt" | grep -E "^all_files\.txt$") ]] && { printf "Firmware already dumped!\nGo to https://"$GITLAB_INSTANCE"/${GIT_ORG}/${repo}/-/tree/${branch}\n" && exit 1; }
 
 	# Remove The Journal File Inside System/Vendor
 	find . -mindepth 2 -type d -name "\[SYS\]" -exec rm -rf {} \; 2>/dev/null
@@ -1295,10 +1307,17 @@ elif [[ -s "${PROJECT_DIR}"/.gitlab_token ]]; then
 	printf "\n"
 
 	# Push to GitLab
-	while [[ ! $(curl -sL "${GITLAB_HOST}/${GIT_ORG}/${repo}/-/raw/${branch}/all_files.txt" | grep "all_files.txt") ]]
+	while [[ ! $(curl -sL "${GITLAB_HOST}/${GIT_ORG}/${repo}/-/raw/${branch}/all_files.txt" | grep -E "^all_files\.txt$") ]]
 	do
 		printf "\nPushing to %s via SSH...\nBranch:%s\n" "${GITLAB_HOST}/${GIT_ORG}/${repo}.git" "${branch}"
 		sleep 1
+		git lfs install
+		[ -e ".gitattributes" ] || find . -type f -not -path ".git/*" -size +100M -exec git lfs track {} \;
+		[ -e ".gitattributes" ] && {
+			git add ".gitattributes"
+			git commit -sm "Setup Git LFS"
+			git push -u origin "${branch}"
+		}
 		git add -- . ':!system/' ':!vendor/'
 		git commit -sm "Add extras for ${description}"
 		git push -u origin "${branch}"

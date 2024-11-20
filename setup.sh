@@ -48,8 +48,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	    sleep 1
 	    echo -e ${BLUE}">> Installing Required Packages..."${NORMAL}
 	    sleep 1
-        sudo apt install -y unace unrar zip unzip p7zip-full p7zip-rar sharutils rar uudeview mpack arj cabextract device-tree-compiler liblzma-dev python3-pip brotli liblz4-tool axel gawk aria2 detox cpio rename liblz4-dev jq neofetch || abort "Setup Failed!"
-        sudo apt install -y aria2 arj brotli cabextract cmake device-tree-compiler gcc g++ git liblz4-tool liblzma-dev libtinyxml2-dev lz4 mpack openjdk-11-jdk p7zip-full p7zip-rar python3 python3-pip rar sharutils unace unrar unzip uudeview xz-utils zip zlib1g-dev || abort "Setup Failed!"
+        sudo apt install -y unace unrar zip unzip p7zip-full p7zip-rar sharutils rar uudeview mpack arj cabextract device-tree-compiler liblzma-dev python3-pip brotli liblz4-tool axel gawk aria2 detox cpio rename liblz4-dev jq neofetch git-lfs || abort "Setup Failed!"
+        sudo apt install -y aria2 arj brotli cabextract cmake device-tree-compiler gcc g++ git liblz4-tool liblzma-dev libtinyxml2-dev lz4 mpack openjdk-11-jdk p7zip-full p7zip-rar python3 python3-pip rar sharutils unace unrar unzip uudeview xz-utils zip zlib1g-dev git-lfs || abort "Setup Failed!"
 
  elif [[ "$(command -v dnf)" != "" ]]; then
         echo -e ${PURPLE}"Fedora Based Distro Detected"${NORMAL}
@@ -58,7 +58,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	    sleep 1
 
 	    # "dnf" automatically updates repos before installing packages
-        sudo dnf install -y unace unrar zip unzip sharutils uudeview arj cabextract file-roller dtc python3-pip brotli axel aria2 detox cpio lz4 python3-devel xz-devel p7zip p7zip-plugins || abort "Setup Failed!"
+        sudo dnf install -y unace unrar zip unzip sharutils uudeview arj cabextract file-roller dtc python3-pip brotli axel aria2 detox cpio lz4 python3-devel xz-devel p7zip p7zip-plugins git-lfs || abort "Setup Failed!"
 
     elif [[ "$(command -v pacman)" != "" ]]; then
         echo -e ${PURPLE}"Arch or Arch Based Distro Detected"${NORMAL}
@@ -80,14 +80,16 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     sleep 1
 	echo -e ${BLUE}">> Installing Required Packages..."${NORMAL}
 	sleep 1
-    brew install protobuf xz brotli lz4 aria2 detox coreutils p7zip gawk || abort "Setup Failed!"
+    brew install protobuf xz brotli lz4 aria2 detox coreutils p7zip gawk git-lfs || abort "Setup Failed!"
 fi
 
 sleep 1
 echo -e ${PURPLE}"Distro Specific Setup Done, Now Installing pyhton Packages from pip..."${NORMAL}
 sleep 1
-python3 -m venv .venv
-[ -e ".venv" ] && source .venv/bin/activate
+[[ "${USE_VENV}" == "false" || "${USE_VENV}" == "0" ]] || {
+    python3 -m venv .venv
+    [ -e ".venv" ] && source .venv/bin/activate
+}
 pip install backports.lzma extract-dtb  pycryptodome docopt zstandard twrpdtgen future requests humanize clint lz4 pycryptodome pycryptodomex || abort "Setup Failed!"
 pip install --force-reinstall -v "protobuf==3.20.0"
 pip install git+https://github.com/sebaubuntu-python/aospdtgen || abort "Setup Failed!"
